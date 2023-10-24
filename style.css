@@ -1,0 +1,80 @@
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    background-color: #121212;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.reset {
+    background-color: #245ca5;
+    width: 120px;
+    height: 40px;
+    margin: 25px 0;
+    font-size: 16px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    transform: scale(1);
+}
+
+.reset:hover {
+    background-color: #174175;
+}
+
+.reset:active {
+    transform: scale(0.95);
+}
+
+.disc_on_hover {
+    width: 700px;
+    height: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    visibility: hidden;
+}
+
+.disc_on_hover .square {
+    width: 80px;
+}
+
+.visible {
+    visibility: visible;
+    opacity: 40%;
+}
+
+.board_game {
+    background-color: #245ca5;
+    border: rgba(12, 12, 12, 0.884) solid 3px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    width: 700px;
+    height: 600px;
+    border-radius: 10px;
+}
+
+
+.square {
+    width: 85px;
+    height: 85px;
+    border: rgba(8, 8, 8, 0.623) solid 2px;
+    border-radius: 50%;
+    margin: 5px;
+    background-color: rgba(255, 255, 255, 0.89);
+}
+
+.disc_red {
+    background-color: rgba(236, 49, 49, 0.932);
+}
+
+.disc_yellow {
+    background-color: rgba(238, 238, 50, 0.959);
+}
