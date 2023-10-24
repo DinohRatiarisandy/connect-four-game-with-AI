@@ -2,14 +2,14 @@ body {
     margin: 0;
     padding: 0;
     height: 100vh;
-    background-color: #121212;
+    background-color: #0f0c11;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .reset {
-    background-color: #245ca5;
+    background-color: #3c4249cb;
     width: 120px;
     height: 40px;
     margin: 25px 0;
@@ -23,7 +23,7 @@ body {
 }
 
 .reset:hover {
-    background-color: #174175;
+    background-color: rgba(50, 210, 238, 0.959);
 }
 
 .reset:active {
@@ -46,11 +46,11 @@ body {
 
 .visible {
     visibility: visible;
-    opacity: 40%;
+    opacity: 50%;
 }
 
 .board_game {
-    background-color: #245ca5;
+    background-color: #3c4249cb;
     border: rgba(12, 12, 12, 0.884) solid 3px;
     display: flex;
     flex-wrap: wrap;
@@ -68,13 +68,29 @@ body {
     border: rgba(8, 8, 8, 0.623) solid 2px;
     border-radius: 50%;
     margin: 5px;
-    background-color: rgba(255, 255, 255, 0.89);
+    background-color: rgba(255, 255, 255, 0.925);
 }
 
 .disc_red {
-    background-color: rgba(236, 49, 49, 0.932);
+    background-color: rgb(241, 57, 57);
 }
 
 .disc_yellow {
-    background-color: rgba(238, 238, 50, 0.959);
+    background-color: rgba(238, 210, 50, 0.959);
+}
+
+h3 {
+    color: white;
+    font-size: large;
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footer div {
+    width: 120px;
+    height: 40px;
 }
