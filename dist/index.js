@@ -5,6 +5,7 @@ const disc_on_hover = document.querySelector(".disc_on_hover");
 const button_reset = document.querySelector(".reset");
 const info = document.querySelector(".info");
 let player = "red";
+let is_cpu_active = false;
 let board_state = [
     [0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0],
@@ -15,13 +16,22 @@ let board_state = [
 ];
 const ROW = board_state.length;
 const COL = board_state[0].length;
-// Function to handle making a move when a cell is clicked
+// Function to handle making a move when a column is clicked
 function make_move(e) {
-    // Identify the selected cell
+    if (player === "yellow" && is_cpu_active) {
+        // TODO: CPU move
+        return;
+    }
+    if (is_cpu_active)
+        remove_highlights();
+    // Identify the selected column
     const column = e.target;
-    // Extract the column from the cell's class
+    // Extract the column
     const col = column.classList[1];
     const disc_active = document.querySelector(`.disc_${col}`);
+    // setTimeout(() => {
+    //     switch_player(disc_active)
+    // }, 2000);
     // Determine the valid row for the selected column
     const valid_row = take_valid_place(parseInt(col));
     if (valid_row !== -1) {
@@ -44,11 +54,14 @@ function make_move(e) {
             remove_event();
             return;
         }
-        // Switch to the other player's turn
-        player = player === "red" ? "yellow" : "red";
-        disc_active === null || disc_active === void 0 ? void 0 : disc_active.classList.add(`disc_${player}`);
-        info.textContent = `${player}'s turn.`;
     }
+    switch_player(disc_active);
+}
+// Switch to the other player's turn
+function switch_player(disc_active) {
+    player = player === "red" ? "yellow" : "red";
+    disc_active === null || disc_active === void 0 ? void 0 : disc_active.classList.add(`disc_${player}`);
+    info.textContent = `${player}'s turn.`;
 }
 // Function to find the valid row for a given column
 function take_valid_place(col) {
@@ -152,6 +165,8 @@ function is_tie() {
 }
 // Function to handle mouseover events on column
 function on_mouse_over(e) {
+    if (player === "yellow" && is_cpu_active)
+        return;
     const col_selected = e.target;
     const col = col_selected.classList[1];
     col_selected.classList.add("active");
@@ -202,6 +217,14 @@ function remove_child(parent) {
         parent.removeChild(parent.firstChild);
     }
 }
+// Remove all highlights after first player move
+function remove_highlights() {
+    var _a, _b;
+    // Remove the highlighted column
+    (_a = document.querySelector(".active")) === null || _a === void 0 ? void 0 : _a.classList.remove("active");
+    // Remove the visible disc on top
+    (_b = document.querySelector(".visible")) === null || _b === void 0 ? void 0 : _b.classList.remove("visible");
+}
 // Function to create disc hovers for player selection
 function create_discs_hover() {
     for (let c = 0; c < COL; c++) {
@@ -223,6 +246,7 @@ function create_cols_on_hover() {
 }
 // Function to initialize the game
 function main() {
+    button_reset.addEventListener("click", on_reset);
     // Create disc hovers for player selection
     create_discs_hover();
     create_cols_on_hover();
@@ -233,7 +257,6 @@ function main() {
             cell_created.classList.add("square", `col_${COL.toString()}`);
             cell_created.id = `row${ROW}_col${COL}`;
             board_game.appendChild(cell_created);
-            button_reset.addEventListener("click", on_reset);
         }
     }
 }
