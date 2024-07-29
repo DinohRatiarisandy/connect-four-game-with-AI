@@ -5,7 +5,7 @@ const disc_on_hover = document.querySelector(".disc_on_hover");
 const button_reset = document.querySelector(".reset");
 const info = document.querySelector(".info");
 let player = "red";
-let is_cpu_active = false;
+let is_cpu_active = true;
 let board_state = [
     [0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0],
@@ -16,22 +16,29 @@ let board_state = [
 ];
 const ROW = board_state.length;
 const COL = board_state[0].length;
+// -------------- PLAYER TWO --------------
+function find_valid_columns() {
+    let valid_cols = [];
+    for (let i = 0; i < COL; i++) {
+        for (let j = ROW - 1; j >= 0; j--) {
+            if (board_state[j][i] === 0) {
+                valid_cols.push([j, i]);
+                break;
+            }
+        }
+    }
+    return valid_cols;
+}
+// -----------------------------------------
 // Function to handle making a move when a column is clicked
 function make_move(e) {
-    if (player === "yellow" && is_cpu_active) {
-        // TODO: CPU move
+    if (player === "yellow" && is_cpu_active)
         return;
-    }
-    if (is_cpu_active)
-        remove_highlights();
     // Identify the selected column
     const column = e.target;
     // Extract the column
     const col = column.classList[1];
     const disc_active = document.querySelector(`.disc_${col}`);
-    // setTimeout(() => {
-    //     switch_player(disc_active)
-    // }, 2000);
     // Determine the valid row for the selected column
     const valid_row = take_valid_place(parseInt(col));
     if (valid_row !== -1) {
@@ -41,24 +48,40 @@ function make_move(e) {
         const valid_cell = document.querySelector(`#row${valid_row}_col${col}`);
         valid_cell === null || valid_cell === void 0 ? void 0 : valid_cell.classList.add(`disc_${player}`);
         // Update the game state
-        board_state[valid_row][parseInt(col)] = player === "red" ? 1 : 2;
+        board_state[valid_row][parseInt(col)] = 1;
         // Check if the current player has won
-        if (check_winner(valid_row, parseInt(col))) {
-            info.textContent = `Player ${player === "red" ? 1 : 2} won!`;
-            remove_event();
+        if (have_winner(valid_row, parseInt(col)))
             return;
-        }
         // Check if the game is a draw
-        if (is_tie()) {
-            info.textContent = "The game is a draw!";
-            remove_event();
-            return;
-        }
+        is_tie();
     }
     switch_player(disc_active);
+    remove_highlights();
+    setTimeout(() => {
+        if (player === "yellow" && is_cpu_active) {
+            // TODO: CPU move
+            // 1 - find all available columns
+            const valid_cols = find_valid_columns();
+            // 2 - get one valid column from it (random)
+            const [row, col] = valid_cols[Math.trunc(Math.random() * valid_cols.length)];
+            // 3 - place to the board
+            const valid_cell = document.querySelector(`#row${row}_col${col}`);
+            valid_cell === null || valid_cell === void 0 ? void 0 : valid_cell.classList.add(`disc_${player}`);
+            // 4 - update the board_state
+            board_state[row][col] = 2;
+            // 5 - check if win or tie 
+            if (have_winner(row, col))
+                return;
+            is_tie();
+            // 6 - switch player
+            switch_player(disc_active);
+        }
+    }, 900);
 }
 // Switch to the other player's turn
 function switch_player(disc_active) {
+    // Remove old player "disc" class
+    disc_active === null || disc_active === void 0 ? void 0 : disc_active.classList.remove(`disc_${player}`);
     player = player === "red" ? "yellow" : "red";
     disc_active === null || disc_active === void 0 ? void 0 : disc_active.classList.add(`disc_${player}`);
     info.textContent = `${player}'s turn.`;
@@ -73,8 +96,10 @@ function take_valid_place(col) {
     return -1;
 }
 // Function to check if a player has won the game
-function check_winner(row, col) {
+function have_winner(row, col) {
     if (check_vertical(row, col) || check_horizontal(row, col) || check_diagonals(row, col)) {
+        info.textContent = `Player ${player === 'red' ? 1 : 2} won!`;
+        remove_event();
         return true;
     }
     return false;
@@ -158,10 +183,11 @@ function is_tie() {
     for (let r = 0; r < ROW; r++) {
         for (let c = 0; c < COL; c++) {
             if (!board_state[r][c])
-                return false;
+                return;
         }
     }
-    return true;
+    info.textContent = "The game is a draw!";
+    remove_event();
 }
 // Function to handle mouseover events on column
 function on_mouse_over(e) {
