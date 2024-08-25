@@ -50,10 +50,17 @@ function make_move(e) {
         // Update the game state
         board_state[valid_row][parseInt(col)] = 1;
         // Check if the current player has won
-        if (have_winner(valid_row, parseInt(col)))
+        if (have_winner(valid_row, parseInt(col))) {
+            info.textContent = "Player 1 won!";
+            remove_event();
             return;
+        }
         // Check if the game is a draw
-        is_tie();
+        if (is_tie()) {
+            info.textContent = "The game is a draw!";
+            remove_event();
+            return;
+        }
     }
     switch_player(disc_active);
     remove_highlights();
@@ -70,9 +77,16 @@ function make_move(e) {
             // 4 - update the board_state
             board_state[row][col] = 2;
             // 5 - check if win or tie 
-            if (have_winner(row, col))
+            if (have_winner(row, col)) {
+                info.textContent = "Player 2 won!";
+                remove_event();
                 return;
-            is_tie();
+            }
+            if (is_tie()) {
+                info.textContent = "The game is a draw!";
+                remove_event();
+                return;
+            }
             // 6 - switch player
             switch_player(disc_active);
         }
@@ -98,8 +112,6 @@ function take_valid_place(col) {
 // Function to check if a player has won the game
 function have_winner(row, col) {
     if (check_vertical(row, col) || check_horizontal(row, col) || check_diagonals(row, col)) {
-        info.textContent = `Player ${player === 'red' ? 1 : 2} won!`;
-        remove_event();
         return true;
     }
     return false;
@@ -183,11 +195,10 @@ function is_tie() {
     for (let r = 0; r < ROW; r++) {
         for (let c = 0; c < COL; c++) {
             if (!board_state[r][c])
-                return;
+                return false;
         }
     }
-    info.textContent = "The game is a draw!";
-    remove_event();
+    return true;
 }
 // Function to handle mouseover events on column
 function on_mouse_over(e) {

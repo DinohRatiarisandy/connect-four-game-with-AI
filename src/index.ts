@@ -23,11 +23,11 @@ const COL = board_state[0].length;
 function find_valid_columns(): Array<Array<number>> {
     let valid_cols = []
     for (let i = 0; i < COL; i++) {
-        for (let j = ROW-1; j >= 0; j--) {
-            if (board_state[j][i] === 0){
+        for (let j = ROW - 1; j >= 0; j--) {
+            if (board_state[j][i] === 0) {
                 valid_cols.push([j, i])
                 break
-            } 
+            }
         }
     }
     return valid_cols;
@@ -41,7 +41,7 @@ function make_move(e: Event): void {
 
     // Identify the selected column
     const column = e.target as HTMLElement;
-    
+
     // Extract the column
     const col = column.classList[1];
     const disc_active = document.querySelector(`.disc_${col}`);
@@ -59,12 +59,20 @@ function make_move(e: Event): void {
 
         // Update the game state
         board_state[valid_row][parseInt(col)] = 1;
-            
+
         // Check if the current player has won
-        if (have_winner(valid_row, parseInt(col))) return
+        if (have_winner(valid_row, parseInt(col))) {
+            info.textContent = "Player 1 won!";
+            remove_event();
+            return
+        }
 
         // Check if the game is a draw
-        is_tie()
+        if (is_tie()) {
+            info.textContent = "The game is a draw!";
+            remove_event();
+            return;
+        }
     }
 
     switch_player(disc_active)
@@ -83,11 +91,19 @@ function make_move(e: Event): void {
             // 4 - update the board_state
             board_state[row][col] = 2
             // 5 - check if win or tie 
-            if (have_winner(row, col)) return
-            is_tie()
+            if (have_winner(row, col)) {
+                info.textContent = "Player 2 won!";
+                remove_event();
+                return
+            }
+            if (is_tie()) {
+                info.textContent = "The game is a draw!";
+                remove_event();
+                return
+            }
             // 6 - switch player
             switch_player(disc_active)
-        }    
+        }
     }, 900);
 }
 
@@ -113,8 +129,6 @@ function take_valid_place(col: number): number {
 // Function to check if a player has won the game
 function have_winner(row: number, col: number): boolean {
     if (check_vertical(row, col) || check_horizontal(row, col) || check_diagonals(row, col)) {
-        info.textContent = `Player ${player === 'red' ? 1 : 2} won!`;
-        remove_event();
         return true;
     }
     return false
@@ -211,14 +225,13 @@ function count_aligned_disc_diagonal(row: number, col: number, step1: number, st
 }
 
 // Function to check if the game is a draw
-function is_tie(): void {
+function is_tie(): boolean {
     for (let r = 0; r < ROW; r++) {
         for (let c = 0; c < COL; c++) {
-            if (!board_state[r][c]) return;
+            if (!board_state[r][c]) return false;
         }
     }
-    info.textContent = "The game is a draw!";
-    remove_event();
+    return true
 }
 
 // Function to handle mouseover events on column
@@ -227,7 +240,7 @@ function on_mouse_over(e: Event): void {
 
     const col_selected = e.target as HTMLElement;
     const col = col_selected.classList[1];
-    
+
     col_selected.classList.add("active");
 
     const disc_active = document.querySelector(`.disc_${col}`);
@@ -238,9 +251,9 @@ function on_mouse_over(e: Event): void {
 function on_mouse_out(e: Event): void {
     const col_selected = e.target as HTMLElement;
     const col = col_selected.classList[1];
-    
+
     col_selected.classList.remove("active");
-    
+
     const disc_active = document.querySelector(`.disc_${col}`);
     disc_active?.classList.remove("visible", `disc_${player}`);
 }
@@ -270,7 +283,7 @@ function on_reset(): void {
 // Function to remove event listeners from all columns
 function remove_event(): void {
     const columns = document.getElementsByClassName("column");
-    
+
     for (let i = 0; i < columns.length; i++) {
         const column = columns[i] as HTMLElement;
 
@@ -294,7 +307,7 @@ function remove_child(parent: HTMLElement): void {
 function remove_highlights() {
     // Remove the highlighted column
     document.querySelector(".active")?.classList.remove("active")
-    
+
     // Remove the visible disc on top
     document.querySelector(".visible")?.classList.remove("visible")
 }
