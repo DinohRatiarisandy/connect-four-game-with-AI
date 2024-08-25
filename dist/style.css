@@ -31,8 +31,8 @@ body {
 }
 
 .disc_on_hover {
-    width: 700px;
-    height: 80px;
+    width: 540px;
+    height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -50,8 +50,8 @@ body {
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    width: 700px;
-    height: 600px;
+    width: 540px;
+    height: 420px;
     border-radius: 20px;
     position: relative;
 }
@@ -61,8 +61,8 @@ body {
 }
 
 .square {
-    width: 85px;
-    height: 85px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     margin: 5px;
     background-color: #101b27;
@@ -99,8 +99,8 @@ h3 {
 
 .column {
     position: absolute;
-    width: 100px;
-    height: 600px;
+    width: 70px;
+    height: 420px;
     border-radius: 20px;
     background-color: transparent;
     transition: background-color 0.3s ease;

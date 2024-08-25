@@ -4,6 +4,12 @@ const disc_on_hover = document.querySelector(".disc_on_hover") as HTMLElement;
 const button_reset = document.querySelector(".reset") as HTMLElement;
 const info = document.querySelector(".info") as HTMLElement;
 
+const PLAYER_PIECE = 1
+const BOT_PIECE = 2
+const WINDOW_LENGTH = 4
+const EMPTY = 0
+const DEPTH = 4
+
 let player = "red";
 let is_cpu_active = true;
 
@@ -20,11 +26,164 @@ const ROW = board_state.length;
 const COL = board_state[0].length;
 
 // -------------- PLAYER TWO --------------
-function find_valid_columns(): Array<Array<number>> {
+
+function minimax(
+    board: number[][],
+    depth: number,
+    alpha: number,
+    beta: number,
+    maximisingPlayer: boolean
+): [number | null, number] {
+
+    const valid_locations = find_valid_columns(board);
+    const isTerminal = is_terminal_node(board);
+
+    if (depth === 0 || isTerminal) {
+        if (isTerminal) {
+            if (have_winner(board, BOT_PIECE)) {
+                return [null, 10000000];
+            } else if (have_winner(board, PLAYER_PIECE)) {
+                return [null, -10000000];
+            } else {
+                return [null, 0];
+            }
+        } else {
+            return [null, score_position(board, BOT_PIECE)];
+        }
+    }
+
+    if (maximisingPlayer) {
+        let value = -Infinity;
+        let column = valid_locations[Math.floor(Math.random() * valid_locations.length)][1];
+        for (const [row, col] of valid_locations) {
+            const bCopy = board.map(row => row.slice());
+            bCopy[row][col] = BOT_PIECE
+            const newScore = minimax(bCopy, depth - 1, alpha, beta, false)[1];
+            if (newScore > value) {
+                value = newScore;
+                column = col;
+            }
+            alpha = Math.max(alpha, value);
+            if (alpha >= beta) {
+                break;
+            }
+        }
+        return [column, value];
+    } else { // Minimising player
+        let value = Infinity;
+        let column = valid_locations[Math.floor(Math.random() * valid_locations.length)][1];
+        for (const [row, col] of valid_locations) {
+            const bCopy = board.map(row => row.slice());
+            bCopy[row][col] = PLAYER_PIECE
+            const newScore = minimax(bCopy, depth - 1, alpha, beta, true)[1];
+            if (newScore < value) {
+                value = newScore;
+                column = col;
+            }
+            beta = Math.min(beta, value);
+            if (alpha >= beta) {
+                break;
+            }
+        }
+        return [column, value];
+    }
+}
+
+
+// Define wining moves or no remaining valid locations as terminal nodes (end points)
+function is_terminal_node(board: number[][]): boolean {
+    return have_winner(board, PLAYER_PIECE) || have_winner(board, BOT_PIECE) || find_valid_columns(board).length === 0
+}
+
+// Set window scores based on contents
+function evaluate_window(window: number[], piece: number): number {
+    let score = 0;
+
+    // Switch scoring based on turn
+    const oppPiece = (piece === PLAYER_PIECE) ? BOT_PIECE : PLAYER_PIECE;
+
+    // Prioritise a winning move
+    // Minimax makes this less important
+    if (window.filter(cell => cell === piece).length === 4) {
+        score += 100;
+    }
+    // Make connecting 3 second priority
+    else if (window.filter(cell => cell === piece).length === 3 && window.filter(cell => cell === EMPTY).length === 1) {
+        score += 5;
+    }
+    // Make connecting 2 third priority
+    else if (window.filter(cell => cell === piece).length === 2 && window.filter(cell => cell === EMPTY).length === 2) {
+        score += 2;
+    }
+    // Prioritise blocking an opponent's winning move (but not over bot winning)
+    // Minimax makes this less important
+    if (window.filter(cell => cell === oppPiece).length === 3 && window.filter(cell => cell === EMPTY).length === 1) {
+        score -= 4;
+    }
+
+    return score;
+}
+
+
+// Look at the board using a 4-piece window to evaluate the whole board & choose a move
+function score_position(board: number[][], piece: number): number {
+    let score = 0
+
+    /* Score centre column */
+    const centerColumnIndex = Math.floor(COL / 2);
+    // Extract the center column
+    const centerArray = board.map(row => row[centerColumnIndex]);
+    // Count occurrences of the piece in the center column
+    const centerCount = centerArray.filter(value => value === piece).length;
+    score += centerCount * 3
+
+    // Score horizontal positions
+    for (let r = 0; r < ROW; r++) {
+        const rowArray: number[] = board[r].slice();
+        for (let c = 0; c < COL - 3; c++) {
+            // Create a horizontal window of 4
+            const window: number[] = rowArray.slice(c, c + WINDOW_LENGTH);
+            score += evaluate_window(window, piece);
+        }
+    }
+
+    // Score vertical positions
+    for (let c = 0; c < COL; c++) {
+        const colArray: number[] = board.map(row => row[c]);
+        for (let r = 0; r < ROW - 3; r++) {
+            // Create a vertical window of 4
+            const window: number[] = colArray.slice(r, r + WINDOW_LENGTH);
+            score += evaluate_window(window, piece);
+        }
+    }
+
+    // Score positive diagonals
+    for (let r = 0; r < ROW - 3; r++) {
+        for (let c = 0; c < COL - 3; c++) {
+            // Create a positive diagonal window of 4
+            const window: number[] = Array.from({ length: WINDOW_LENGTH }, (_, i) => board[r + i][c + i]);
+            score += evaluate_window(window, piece);
+        }
+    }
+
+    // Score negative diagonals
+    for (let r = 0; r < ROW - 3; r++) {
+        for (let c = 0; c < COL - 3; c++) {
+            // Create a negative diagonal window of 4
+            const window: number[] = Array.from({ length: WINDOW_LENGTH }, (_, i) => board[r + 3 - i][c + i]);
+            score += evaluate_window(window, piece);
+        }
+    }
+
+    return score;
+}
+
+// Get all locations that could contain a piece
+function find_valid_columns(board: number[][]): number[][] {
     let valid_cols = []
     for (let i = 0; i < COL; i++) {
         for (let j = ROW - 1; j >= 0; j--) {
-            if (board_state[j][i] === 0) {
+            if (board[j][i] === 0) {
                 valid_cols.push([j, i])
                 break
             }
@@ -47,7 +206,7 @@ function make_move(e: Event): void {
     const disc_active = document.querySelector(`.disc_${col}`);
 
     // Determine the valid row for the selected column
-    const valid_row = take_valid_place(parseInt(col));
+    const valid_row = take_valid_place(board_state, parseInt(col));
 
     if (valid_row !== -1) {
         // Remove the active player's disc from the previous cell
@@ -58,10 +217,10 @@ function make_move(e: Event): void {
         valid_cell?.classList.add(`disc_${player}`);
 
         // Update the game state
-        board_state[valid_row][parseInt(col)] = 1;
+        board_state[valid_row][parseInt(col)] = PLAYER_PIECE;
 
         // Check if the current player has won
-        if (have_winner(valid_row, parseInt(col))) {
+        if (have_winner(board_state, PLAYER_PIECE)) {
             info.textContent = "Player 1 won!";
             remove_event();
             return
@@ -78,33 +237,33 @@ function make_move(e: Event): void {
     switch_player(disc_active)
     remove_highlights()
 
-    setTimeout(() => {
-        if (player === "yellow" && is_cpu_active) {
-            // TODO: CPU move
-            // 1 - find all available columns
-            const valid_cols = find_valid_columns()
-            // 2 - get one valid column from it (random)
-            const [row, col] = valid_cols[Math.trunc(Math.random() * valid_cols.length)]
+    if (player === "yellow" && is_cpu_active) {
+        // TODO: CPU move
+        // 1 - find all available columns
+        const [best_col, minimax_score] = minimax(board_state, DEPTH, -Infinity, Infinity, true)
+        // 2 - get the valid row from the best_col
+        if (best_col !== null) {
+            const next_row = take_valid_place(board_state, best_col)
             // 3 - place to the board
-            const valid_cell = document.querySelector(`#row${row}_col${col}`);
+            const valid_cell = document.querySelector(`#row${next_row}_col${best_col}`);
             valid_cell?.classList.add(`disc_${player}`);
             // 4 - update the board_state
-            board_state[row][col] = 2
-            // 5 - check if win or tie 
-            if (have_winner(row, col)) {
-                info.textContent = "Player 2 won!";
-                remove_event();
-                return
-            }
-            if (is_tie()) {
-                info.textContent = "The game is a draw!";
-                remove_event();
-                return
-            }
-            // 6 - switch player
-            switch_player(disc_active)
+            board_state[next_row][best_col] = BOT_PIECE
         }
-    }, 900);
+        // 5 - check if win or tie 
+        if (have_winner(board_state, BOT_PIECE)) {
+            info.textContent = "Player 2 won!";
+            remove_event();
+            return
+        }
+        if (is_tie()) {
+            info.textContent = "The game is a draw!";
+            remove_event();
+            return
+        }
+        // 6 - switch player
+        switch_player(disc_active)
+    }
 }
 
 // Switch to the other player's turn
@@ -117,9 +276,9 @@ function switch_player(disc_active: Element | null): void {
 }
 
 // Function to find the valid row for a given column
-function take_valid_place(col: number): number {
+function take_valid_place(board: number[][], col: number): number {
     for (let r = ROW - 1; r >= 0; r--) {
-        if (board_state[r][col] === 0) {
+        if (board[r][col] === 0) {
             return r;
         }
     }
@@ -127,101 +286,44 @@ function take_valid_place(col: number): number {
 }
 
 // Function to check if a player has won the game
-function have_winner(row: number, col: number): boolean {
-    if (check_vertical(row, col) || check_horizontal(row, col) || check_diagonals(row, col)) {
-        return true;
+function have_winner(board: number[][], piece: number): boolean {
+    // Check valid horizontal locations for win
+    for (let c = 0; c < COL - 3; c++) {
+        for (let r = 0; r < ROW; r++) {
+            if (board[r][c] === piece && board[r][c + 1] === piece && board[r][c + 2] === piece && board[r][c + 3] === piece) {
+                return true
+            }
+        }
     }
+
+    // Check valid vertical locations for win
+    for (let c = 0; c < COL; c++) {
+        for (let r = 0; r < ROW - 3; r++) {
+            if (board[r][c] === piece && board[r + 1][c] === piece && board[r + 2][c] === piece && board[r + 3][c] === piece) {
+                return true
+            }
+        }
+    }
+
+    // Check valid positive diagonal locations for win
+    for (let c = 0; c < COL - 3; c++) {
+        for (let r = 0; r < ROW - 3; r++) {
+            if (board[r][c] === piece && board[r + 1][c + 1] === piece && board[r + 2][c + 2] === piece && board[r + 3][c + 3] === piece) {
+                return true
+            }
+        }
+    }
+
+    // Check valid negative diagonal locatiosn fow win
+    for (let c = 0; c < COL - 3; c++) {
+        for (let r = 3; r < ROW; r++) {
+            if (board[r][c] === piece && board[r - 1][c + 1] === piece && board[r - 2][c + 2] === piece && board[r - 3][c + 3] === piece) {
+                return true
+            }
+        }
+    }
+
     return false
-}
-
-// Function to check for a horizontal win
-function check_horizontal(row: number, col: number): boolean {
-    const count_left = count_aligned_disc_horizontal(row, col, -1);
-    const count_right = count_aligned_disc_horizontal(row, col, 1);
-
-    if (count_left + count_right + 1 >= 4) {
-        return true;
-    }
-
-    return false;
-}
-
-// Function to check for a vertical win
-function check_vertical(row: number, col: number): boolean {
-    let count = 1;
-
-    while (row < ROW) {
-        let next_row = row + 1;
-
-        if (next_row >= 0 && next_row < ROW) {
-            if (board_state[next_row][col] === board_state[row][col]) {
-                count += 1;
-            }
-            else {
-                break;
-            }
-        }
-        row = next_row;
-    }
-
-    if (count === 4) {
-        return true;
-    }
-
-    return false;
-}
-
-// Function to check for a diagonal win
-function check_diagonals(row: number, col: number): boolean {
-    let count_diag_one = count_aligned_disc_diagonal(row, col, 1, -1) + count_aligned_disc_diagonal(row, col, -1, 1) - 1;
-    let count_diag_two = count_aligned_disc_diagonal(row, col, 1, 1) + count_aligned_disc_diagonal(row, col, -1, -1) - 1;
-
-    if (count_diag_one >= 4 || count_diag_two >= 4) {
-        return true;
-    }
-
-    return false;
-}
-
-// Function to count aligned discs in a horizontal direction
-function count_aligned_disc_horizontal(row: number, col: number, step: number): number {
-    let count = 0;
-
-    while (col >= 0 && col < COL) {
-        let next_col = col + step;
-
-        if (next_col >= 0 && next_col < COL) {
-            if (board_state[row][col] === board_state[row][next_col]) {
-                count += 1;
-            } else {
-                break;
-            }
-        }
-        col = next_col;
-    }
-    return count;
-}
-
-// Function to count aligned discs in a diagonal direction
-function count_aligned_disc_diagonal(row: number, col: number, step1: number, step2: number): number {
-    let count = 1;
-
-    while ((row >= 0 && row < ROW) && (col >= 0 && col < COL)) {
-        let next_row = row + step1;
-        let next_col = col + step2;
-
-        if ((next_col >= 0 && next_col < COL) && (next_row >= 0 && next_row < ROW)) {
-            if (board_state[row][col] === board_state[next_row][next_col]) {
-                count += 1;
-            } else {
-                break;
-            }
-        }
-        row = next_row;
-        col = next_col;
-    }
-
-    return count;
 }
 
 // Function to check if the game is a draw
@@ -323,10 +425,16 @@ function create_discs_hover(): void {
 }
 
 function create_cols_on_hover(): void {
-    for (let col = 0; col < 7; col++) {
+    const numColumns = 7;
+    const spacing = 10;
+    const boardWidth = board_game.clientWidth;
+    const columnWidth = (boardWidth - (numColumns - 1) * spacing) / numColumns;
+
+    for (let col = 0; col < numColumns; col++) {
         const col_created = document.createElement("div");
         col_created.classList.add("column", `${col.toString()}`);
-        col_created.style.left = `${col * 100}px`;
+        col_created.style.width = `${columnWidth}px`;
+        col_created.style.left = `${col * (columnWidth + spacing)}px`;
 
         board_game.appendChild(col_created);
 
@@ -335,6 +443,7 @@ function create_cols_on_hover(): void {
         col_created.addEventListener("click", make_move);
     }
 }
+
 
 // Function to initialize the game
 function main(): void {
